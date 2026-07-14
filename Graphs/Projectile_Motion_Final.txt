@@ -1,0 +1,168 @@
+import tensorflow as tf
+import numpy as np
+import matplotlib.pyplot as plt
+
+# ==========================================
+# STEP 1: Generate Physics Data
+# ==========================================
+
+np.random.seed(42)
+
+g = 9.81
+
+velocity = 20
+angle = 45
+
+theta = np.radians(angle)
+
+# Horizontal positions
+x = np.linspace(0, 40, 200)
+
+# True projectile trajectory
+y_true = (
+        x * np.tan(theta)
+        -
+        (g * x**2)
+        /
+        (2 * velocity**2 * np.cos(theta)**2)
+)
+
+# Keep only points above ground
+mask = y_true >= 0
+
+x = x[mask]
+y_true = y_true[mask]
+
+# Add experimental noise
+noise = np.random.normal(0, 0.5, len(y_true))
+
+y = y_true + noise
+
+# Reshape for TensorFlow
+x_train = x.reshape(-1, 1)
+
+# ==========================================
+# STEP 2: Build Neural Network
+# ==========================================
+
+model = tf.keras.Sequential([
+
+    tf.keras.layers.Dense(
+        50,
+        activation='relu',
+        input_shape=[1]
+    ),
+
+    tf.keras.layers.Dense(
+        50,
+        activation='relu'
+    ),
+
+    tf.keras.layers.Dense(
+        50,
+        activation='relu'
+    ),
+
+    tf.keras.layers.Dense(1)
+
+])
+
+# ==========================================
+# STEP 3: Configure Model
+# ==========================================
+
+model.compile(
+    optimizer='adam',
+    loss='mean_squared_error'
+)
+
+# ==========================================
+# STEP 4: Train Model
+# ==========================================
+
+history = model.fit(
+    x_train,
+    y,
+    epochs=2000,
+    verbose=0
+)
+
+# ==========================================
+# STEP 5: Prediction
+# ==========================================
+
+new_distance = float(input('Enter new distance: '))
+
+prediction = model.predict(
+    np.array([[new_distance]], dtype=float),
+    verbose=0
+)
+
+print()
+print("===================================")
+print("PROJECTILE MOTION ML MODEL")
+print("===================================")
+
+print(f"Distance = {new_distance} m")
+print(f"Predicted Height = {prediction[0][0]:.2f} m")
+
+# ==========================================
+# STEP 6: Predict Entire Curve
+# ==========================================
+
+predicted_values = model.predict(
+    x_train,
+    verbose=0
+)
+
+# ==========================================
+# STEP 7: Calculate Error
+# ==========================================
+
+mse = np.mean(
+    (y - predicted_values.flatten())**2
+)
+
+print()
+print(f"Mean Squared Error = {mse:.3f}")
+
+# ==========================================
+# STEP 8: Plot Results
+# ==========================================
+
+plt.figure(figsize=(8,6))
+
+plt.scatter(
+    x,
+    y,
+    label="Experimental Data"
+)
+
+plt.plot(
+    x,
+    y_true,
+    linewidth=4,
+    color = 'green',
+    label="Theoretical Curve"
+)
+
+plt.plot(
+    x,
+    predicted_values,
+    linewidth=3,
+    color = 'red',
+    label="ML Prediction"
+)
+
+plt.xlabel("Distance (m)")
+plt.ylabel("Height (m)")
+
+plt.title(
+    "Projectile Motion Using Neural Network"
+)
+
+plt.legend()
+
+plt.grid(True)
+
+plt.show()
