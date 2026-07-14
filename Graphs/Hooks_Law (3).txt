@@ -1,0 +1,131 @@
+
+import tensorflow as tf
+import numpy as np
+import matplotlib.pyplot as plt
+
+# ==========================================
+# STEP 1: Generate Physics Data
+# ==========================================
+
+np.random.seed(42)
+
+# Extension values
+x = np.linspace(0, 10, 100)
+
+# Experimental noise
+noise = np.random.normal(0, 1, 100)
+
+# Hooke's Law with noise
+F = 5 * x + noise
+
+# Reshape for TensorFlow
+x_train = x.reshape(-1, 1)
+
+# ==========================================
+# STEP 2: Build Neural Network
+# ==========================================
+
+model = tf.keras.Sequential([
+    tf.keras.layers.Dense(
+        units=1,
+        input_shape=[1]
+    )
+])
+
+# ==========================================
+# STEP 3: Configure Model
+# ==========================================
+
+model.compile(
+    optimizer='sgd',
+    loss='mean_squared_error'
+)
+
+# ==========================================
+# STEP 4: Train Model
+# ==========================================
+
+history = model.fit(
+    x_train,
+    F,
+    epochs=500,
+    verbose=0
+)
+
+# ==========================================
+# STEP 5: Prediction
+# ==========================================
+
+new_extension = float(input("Enter new extension: "))
+
+prediction = model.predict(
+    np.array([[new_extension]], dtype=float),
+    verbose=0
+)
+
+print()
+print("===================================")
+print("HOOKE'S LAW ML MODEL")
+print("===================================")
+print(f"Extension = {new_extension}")
+print(f"Predicted Force = {prediction[0][0]:.2f} N")
+
+# ==========================================
+# STEP 6: Learned Parameters
+# ==========================================
+
+weights = model.layers[0].get_weights()
+
+slope = weights[0][0][0]
+bias = weights[1][0]
+
+print()
+print("Learned Equation:")
+print(f"F = {slope:.3f}x + {bias:.3f}")
+
+# ==========================================
+# STEP 7: Generate Predictions
+# ==========================================
+
+predicted_values = model.predict(
+    x_train,
+    verbose=0
+)
+
+# ==========================================
+# STEP 8: Calculate Error
+# ==========================================
+
+mse = np.mean((F - predicted_values.flatten())**2)
+
+print()
+print(f"Mean Squared Error = {mse:.3f}")
+
+# ==========================================
+# STEP 9: Plot Results
+# ==========================================
+
+plt.figure(figsize=(8,6))
+
+plt.scatter(
+    x,
+    F,
+    label="Experimental Data"
+)
+
+plt.plot(
+    x,
+    predicted_values,
+    linewidth=3,
+    color = 'orange',
+    label="ML Prediction"
+)
+
+plt.xlabel("Extension (m)")
+plt.ylabel("Force (N)")
+plt.title("Hooke's Law: Machine Learning Model")
+
+plt.legend()
+plt.grid(True)
+
+plt.show()
